@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Датацентр Останкино</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #0f172a; color: #e2e8f0;
+    min-height: 100vh; font-size: 15px; line-height: 1.5;
+  }
+
+  /* ============ ЛОГИН ============ */
+  .login-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 20px; background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  }
+  .login-card {
+    width: 100%; max-width: 400px; background: #1e293b;
+    border-radius: 16px; padding: 28px 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5); border: 1px solid #334155;
+  }
+  .login-card h1 { font-size: 1.25rem; text-align: center; margin-bottom: 6px; color: #38bdf8; }
+  .login-card p.sub { text-align: center; font-size: .8rem; color: #94a3b8; margin-bottom: 22px; }
+  .login-card label {
+    display: block; font-size: .82rem; color: #94a3b8;
+    margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .5px;
+  }
+  .login-card select, .login-card input {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid #475569; background: #0f172a;
+    color: #e2e8f0; font-size: 1rem;
+  }
+  .login-card select:focus, .login-card input:focus { outline: none; border-color: #0ea5e9; }
+  .login-card button {
+    width: 100%; margin-top: 22px; padding: 13px;
+    border: none; border-radius: 10px;
+    background: #0ea5e9; color: #0b1220;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+  }
+  .login-card button:hover { background: #38bdf8; }
+  .login-err { color: #fca5a5; font-size: .85rem; text-align: center; margin-top: 12px; min-height: 18px; }
+
+  /* ============ ОСНОВНОЙ ЭКРАН ============ */
+  .app { display: none; flex-direction: column; min-height: 100vh; }
+  .app.visible { display: flex; }
+
+  header {
+    background: linear-gradient(90deg, #1e3a8a, #0ea5e9);
+    padding: 14px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; flex-wrap: wrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+    position: sticky; top: 0; z-index: 30;
+  }
+  header .title { font-size: 1rem; font-weight: 700; }
+  header .user-info { font-size: .78rem; opacity: .95; display: flex; align-items: center; gap: 8px; }
+  header .user-info button {
+    background: rgba(0,0,0,.25); color: #fff; border: none;
+    padding: 6px 12px; border-radius: 6px;
+    font-size: .78rem; cursor: pointer;
+  }
+  header .user-info button:hover { background: rgba(0,0,0,.45); }
+
+  nav {
+    display: flex; gap: 8px; padding: 10px 12px;
+    background: #1e293b; overflow-x: auto;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+    position: sticky; top: 54px; z-index: 20;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 0 0 auto; padding: 9px 14px;
+    border: none; border-radius: 20px;
+    background: #334155; color: #e2e8f0;
+    font-size: .85rem; white-space: nowrap;
+    cursor: pointer; transition: background .15s;
+  }
+  nav button:hover { background: #475569; }
+  nav button.active { background: #0ea5e9; color: #0b1220; font-weight: 600; }
+
+  main { padding: 14px; max-width: 1000px; margin: 0 auto; width: 100%; flex: 1; }
+  section { display: none; animation: fade .2s ease; }
+  section.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: #1e293b; border-radius: 12px;
+    padding: 16px; margin-bottom: 12px; border: 1px solid #334155;
+  }
+  .card h2 { color: #38bdf8; font-size: 1rem; margin-bottom: 10px; }
+  pre { white-space: pre-wrap; word-break: break-word; font-family: inherit; line-height: 1.6; font-size: .9rem; }
+
+  input[type=text], input[type=password], input[type=file], select {
+    width: 100%; padding: 11px 13px;
+    border-radius: 10px; border: 1px solid #475569;
+    background: #0f172a; color: #e2e8f0;
+    font-size: .95rem; margin-top: 6px;
+  }
+  input[type=text]:focus, input[type=password]:focus, select:focus { outline: none; border-color: #0ea5e9; }
+
+  button.action {
+    margin-top: 10px; padding: 11px 18px;
+    border: none; border-radius: 10px;
+    background: #0ea5e9; color: #0b1220;
+    font-weight: 700; cursor: pointer; font-size: .92rem;
+  }
+  button.action:hover { background: #38bdf8; }
+  button.action.secondary { background: #334155; color: #e2e8f0; }
+  button.action.secondary:hover { background: #475569; }
+  button.action.danger { background: #ef4444; color: #fff; }
+  button.action.danger:hover { background: #f87171; }
+
+  .result {
+    margin-top: 12px; padding: 12px;
+    border-radius: 10px; background: #0b1220;
+    border-left: 4px solid #0ea5e9;
+    font-size: .9rem; white-space: pre-wrap; word-break: break-word; line-height: 1.55;
+  }
+  .result.error { border-left-color: #ef4444; color: #fca5a5; }
+  .result.ok    { border-left-color: #22c55e; }
+  .hint { font-size: .78rem; color: #94a3b8; margin-top: 6px; line-height: 1.5; }
+  .hint .example { color: #38bdf8; font-weight: 600; }
+  .hint-title { color: #cbd5e1; font-weight: 600; margin-bottom: 2px; }
+
+  .client-btn {
+    display: inline-block; margin: 4px 4px 0 0;
+    padding: 8px 14px; background: #334155;
+    border-radius: 20px; cursor: pointer;
+    font-size: .85rem; border: none; color: #e2e8f0;
+  }
+  .client-btn:hover { background: #475569; }
+
+  .edit-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .edit-row {
+    display: flex; gap: 8px; align-items: center;
+    background: #0f172a; border-radius: 8px;
+    padding: 8px 10px; border: 1px solid #334155;
+  }
+  .edit-row input {
+    flex: 1; background: transparent; border: none;
+    color: #e2e8f0; font-size: .9rem;
+    padding: 4px 6px; margin: 0;
+  }
+  .edit-row input:focus { outline: 1px solid #0ea5e9; border-radius: 4px; }
+  .edit-row .del {
+    background: #ef4444; border: none; color: #fff;
+    width: 30px; height: 30px; border-radius: 6px;
+    cursor: pointer; font-size: 1rem; flex-shrink: 0;
+  }
+  .edit-row .del:hover { background: #f87171; }
+
+  .users-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .85rem; }
+  .users-table th, .users-table td { padding: 8px 6px; text-align: left; border-bottom: 1px solid #334155; }
+  .users-table th { color: #94a3b8; font-weight: 500; font-size: .78rem; }
+  .users-table .role-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: .72rem; }
+  .role-super { background: #f59e0b; color: #0b1220; }
+  .role-user  { background: #334155; color: #e2e8f0; }
+  .users-table .del-user {
+    background: transparent; border: 1px solid #ef4444;
+    color: #ef4444; padding: 4px 8px;
+    border-radius: 6px; cursor: pointer; font-size: .75rem;
+  }
+  .users-table .del-user:disabled { opacity: .3; cursor: not-allowed; }
+
+  .profile-row { margin-top: 8px; }
+  .profile-row label { font-size: .82rem; color: #94a3b8; }
+
+  /* ============ АДАПТИВ ============ */
+  @media (max-width: 600px) {
+    body { font-size: 14px; }
+    header { padding: 12px 14px; }
+    header .title { font-size: .92rem; }
+    header .user-info { font-size: .72rem; }
+    main { padding: 10px; }
+    .card { padding: 14px; border-radius: 10px; }
+    .card h2 { font-size: .95rem; }
+    nav { top: 50px; padding: 8px 10px; }
+    nav button { padding: 8px 12px; font-size: .8rem; }
+    pre { font-size: .85rem; }
+    .result { font-size: .85rem; padding: 10px; }
+    .login-card { padding: 22px 18px; }
+  }
+  @media (max-width: 360px) {
+    header .title span.long { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ ЛОГИН ============ -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <h1>🏢 Датацентр Останкино</h1>
+    <p class="sub">Вход в систему</p>
+    <label for="loginSelect">Пользователь</label>
+    <select id="loginSelect"></select>
+    <label for="loginPass">Пароль</label>
+    <input type="password" id="loginPass" placeholder="Введите пароль" autocomplete="off">
+    <button onclick="doLogin()">Войти</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ============ ОСНОВНОЙ ЭКРАН ============ -->
+<div class="app" id="app">
+  <header>
+    <div class="title">🏢 <span class="long">Датацентр </span>Останкино</div>
+    <div class="user-info">
+      <span id="currentUserLabel"></span>
+      <button onclick="switchTab('profile')" title="Личный кабинет">👤</button>
+      <button onclick="logout()">Выйти</button>
+    </div>
+  </header>
+
+  <nav id="navBar">
+    <button data-tab="search" class="active">🔍 Поиск</button>
+    <button data-tab="command3">🚨 Нарушения ТУ</button>
+    <button data-tab="command4">🔌 ВОК ЦОД</button>
+    <button data-tab="command5">🔑 Ячейки</button>
+    <button data-tab="command6">🏭 Склады</button>
+    <button data-tab="command7">👥 Клиенты</button>
+    <button data-tab="upload">📥 Excel</button>
+    <button data-tab="profile" id="navProfile">👤 Профиль</button>
+    <button data-tab="users" id="navUsers" style="display:none">⚙ Пользователи</button>
+  </nav>
+
+  <main>
+
+    <!-- Поиск -->
+    <section id="search" class="active">
+      <div class="card">
+        <h2>🔍 Поиск по номеру стойки или СЛ</h2>
+        <input type="text" id="searchInput" placeholder="Введите номер стойки или СЛ">
+        <button class="action" onclick="doSearch()">Найти</button>
+        <div class="hint">
+          <div class="hint-title">📋 Образец формата ввода (не реальные данные):</div>
+          <span class="example">12000</span> — номер стойки в серверном зале<br>
+          <span class="example">2105</span> — номер кроссовой стойки<br>
+          <span class="example">00935</span> — номер СЛ (соединительной линии)
+        </div>
+        <div id="searchResult" class="result" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- Нарушения ТУ -->
+    <section id="command3">
+      <div class="card">
+        <h2>🚨 Нарушения ТУ (статус «Не устранено»)</h2>
+        <div id="violationsList">Загрузка…</div>
+      </div>
+    </section>
+
+    <!-- ВОК ЦОД -->
+    <section id="command4">
+      <div class="card">
+        <h2>🔌 ВОК ЦОД</h2>
+        <pre>🟣 ВОК ЦОД № 1: ЦОД стойка 2105 U43-44 ➡ ЦОД стойка 2206 U43-44
+
+🟣 ВОК ЦОД № 2: АСК-3, АЦ-3, 2-121, стойка 161, U1 ➡ ЦОД стойка 2105 U37-38
+
+🟣 ВОК ЦОД № 3: АСК-1, АЦ-4, 3-110, стойка 2, U1 ➡ ЦОД стойка 2105 U40-41
+
+🟣 ВОК ЦОД № 4: АСК-3, АЦ-3, 2-121, стойка 161, U2 ➡ ЦОД стойка 2206 U40-41
+
+🟣 ВОК ЦОД № 5: АСК-1, АЦ-4, 3-110, стойка 2, U2 ➡ ЦОД стойка 2206 U37-38
+
+🟣 ВОК ЦОД № 6: АСК-1, АЦ-4, 3-110, стойка 2 ➡ ЦОД стойка 2201 U40-41
+
+🟣 ВОК ЦОД № 7: АСК-3, АЦ-3, 2-121, стойка 161 ➡ ЦОД стойка 2110 U28-29</pre>
+      </div>
+    </section>
+
+    <!-- Ячейки -->
+    <section id="command5">
+      <div class="card">
+        <h2>🔑 Ячейки</h2>
+        <div id="cellsView"><pre id="cellsText">Загрузка…</pre></div>
+        <div id="cellsEdit" style="display:none">
+          <div class="edit-list" id="cellsEditList"></div>
+          <button class="action secondary" onclick="addCellRow()">+ Добавить</button>
+          <button class="action" onclick="saveCells()">💾 Сохранить</button>
+          <button class="action secondary" onclick="toggleEdit('cells', false)">Отмена</button>
+        </div>
+        <div id="cellsAdminBtns" style="display:none; margin-top:10px;">
+          <button class="action secondary" onclick="toggleEdit('cells', true)">✏ Редактировать</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Склады -->
+    <section id="command6">
+      <div class="card">
+        <h2>🏭 Склады / Помещения</h2>
+        <div id="storagesView"><pre id="storagesText">Загрузка…</pre></div>
+        <div id="storagesEdit" style="display:none">
+          <div class="edit-list" id="storagesEditList"></div>
+          <button class="action secondary" onclick="addStorageRow()">+ Добавить</button>
+          <button class="action" onclick="saveStorages()">💾 Сохранить</button>
+          <button class="action secondary" onclick="toggleEdit('storages', false)">Отмена</button>
+        </div>
+        <div id="storagesAdminBtns" style="display:none; margin-top:10px;">
+          <button class="action secondary" onclick="toggleEdit('storages', true)">✏ Редактировать</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Клиенты -->
+    <section id="command7">
+      <div class="card">
+        <h2>👥 Клиенты и их стойки</h2>
+        <div id="clientsList">Загрузка…</div>
+        <div id="clientRacksResult" class="result" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- Excel -->
+    <section id="upload">
+      <div class="card">
+        <h2>📥 Загрузить Excel-файлы</h2>
+        <p class="hint">Данные обрабатываются локально в браузере.</p>
+        <label style="display:block; margin-top:12px; font-size:.82rem; color:#94a3b8;">Кабельный журнал (.xls / .xlsx)</label>
+        <input type="file" id="cableFile" accept=".xls,.xlsx">
+        <label style="display:block; margin-top:12px; font-size:.82rem; color:#94a3b8;">Уведомления и нарушение ТУ (.xls / .xlsx)</label>
+        <input type="file" id="violationFile" accept=".xls,.xlsx">
+        <button class="action" onclick="loadFiles()">Обработать</button>
+        <div id="uploadResult" class="result" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- Профиль -->
+    <section id="profile">
+      <div class="card">
+        <h2>👤 Личный кабинет</h2>
+        <div class="profile-row">
+          <label>Пользователь</label>
+          <input type="text" id="profileName" disabled>
+        </div>
+        <div class="profile-row">
+          <label>Роль</label>
+          <input type="text" id="profileRole" disabled>
+        </div>
+
+        <h2 style="margin-top:20px;">🔒 Смена пароля</h2>
+        <div class="profile-row">
+          <label>Текущий пароль</label>
+          <input type="password" id="oldPass" autocomplete="off">
+        </div>
+        <div class="profile-row">
+          <label>Новый пароль</label>
+          <input type="password" id="newPass" autocomplete="off">
+        </div>
+        <div class="profile-row">
+          <label>Повторите новый пароль</label>
+          <input type="password" id="newPass2" autocomplete="off">
+        </div>
+        <button class="action" onclick="changePassword()">Сменить пароль</button>
+        <div id="profileResult" class="result" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- Пользователи -->
+    <section id="users">
+      <div class="card">
+        <h2>⚙ Управление пользователями</h2>
+        <p class="hint">Доступно только супер-администраторам.</p>
+        <table class="users-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>Имя</th>
+              <th>Роль</th>
+              <th></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody"></tbody>
+        </table>
+
+        <h2 style="margin-top:20px;">➕ Добавить пользователя</h2>
+        <label style="display:block; margin-top:8px; font-size:.82rem; color:#94a3b8;">Имя</label>
+        <input type="text" id="newUserName" placeholder="Фамилия И.О.">
+        <label style="display:block; margin-top:8px; font-size:.82rem; color:#94a3b8;">Пароль</label>
+        <input type="text" id="newUserPass" placeholder="Пароль для входа">
+        <label style="display:block; margin-top:8px; font-size:.82rem; color:#94a3b8;">Роль</label>
+        <select id="newUserRole">
+          <option value="user">Пользователь</option>
+          <option value="super">Супер-администратор</option>
+        </select>
+        <button class="action" onclick="addUser()">Добавить</button>
+        <div id="usersResult" class="result" style="display:none"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   ХРАНИЛИЩЕ
+   ============================================================ */
+const STORAGE_KEY = 'dc_ostankino_state_v2';
+
+const DEFAULT_STATE = {
+  users: [
+    { id: 1, name: 'Савин И.А.', password: 'admin', role: 'super' }
+  ],
+  cells: [
+    'ZIP01', 'ZIP02 — АктивХост РУ', 'ZIP03 — DataFort', 'ZIP04 — Старт2',
+    'ZIP05 — Старт2', 'ZIP06 — DataFort', 'ZIP07 — РетнНет', 'ZIP08 — РетнНет',
+    'ZIP09 — Старт2', 'ZIP10', 'ZIP11', 'ZIP12 — Кинескоп', 'ZIP13 — РетнНет',
+    'ZIP14', 'ZIP15', 'ZIP16', 'ZIP17', 'ZIP18', 'ZIP19', 'ZIP20',
+    'ZIP21 — ЗИП HDD УБ ТТЦ', 'ZIP22', 'ZIP23', 'ZIP24'
+  ],
+  storages: [
+    '020/1 — РУФОРМ', '020/2 — РТКлауд', '020/3 — Союзмультфильм',
+    '020/4 — РУФОРМ', '020/5 — РТКлауд', '001/р1 — М100', '001/р2 — Датафорт',
+    '101 — РТКлауд', '112 — ДТРП', '007а — МастерХост', '114 — МастерХост',
+    '105 — М100 (склад)', '110 — М100', '218 — РТКлауд', '220 — РТКлауд',
+    '037 — РУФОРМ'
+  ]
+};
+
+let state = loadState();
+let currentUser = null;
+let data = { cable: [], violations: [] };
+
+/* Список значений, которые НЕ являются клиентами */
+const NON_CLIENTS = new Set([
+  'проставка',
+  'пустое стойкоместо',
+  'стойка не занимается'
+]);
+function isRealClient(name) {
+  if (!name) return false;
+  const n = String(name).trim();
+  if (!n) return false;
+  return !NON_CLIENTS.has(n.toLowerCase());
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const p = JSON.parse(raw);
+    if (!p.users)    p.users = JSON.parse(JSON.stringify(DEFAULT_STATE.users));
+    if (!p.cells)    p.cells = [...DEFAULT_STATE.cells];
+    if (!p.storages) p.storages = [...DEFAULT_STATE.storages];
+    return p;
+  } catch (e) {
+    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+/* ============================================================
+   АВТОРИЗАЦИЯ
+   ============================================================ */
+function fillLoginSelect() {
+  const sel = document.getElementById('loginSelect');
+  sel.innerHTML = '';
+  state.users.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.id;
+    opt.textContent = u.name + (u.role === 'super' ? ' (супер-админ)' : '');
+    sel.appendChild(opt);
+  });
+}
+function doLogin() {
+  const userId = parseInt(document.getElementById('loginSelect').value, 10);
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.textContent = '';
+  const user = state.users.find(u => u.id === userId);
+  if (!user) { err.textContent = 'Пользователь не найден'; return; }
+  if (user.password !== pass) { err.textContent = 'Неверный пароль'; return; }
+  currentUser = user;
+  sessionStorage.setItem('dc_logged', String(user.id));
+  showApp();
+}
+function logout() {
+  currentUser = null;
+  sessionStorage.removeItem('dc_logged');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginErr').textContent = '';
+  fillLoginSelect();
+}
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  const isSuper = currentUser.role === 'super';
+  document.getElementById('currentUserLabel').textContent =
+    currentUser.name + (isSuper ? ' · супер-админ' : '');
+  document.getElementById('navUsers').style.display = isSuper ? '' : 'none';
+  document.getElementById('cellsAdminBtns').style.display = isSuper ? '' : 'none';
+  document.getElementById('storagesAdminBtns').style.display = isSuper ? '' : 'none';
+
+  fillProfile();
+  switchTab('search');
+  renderCells();
+  renderStorages();
+  renderUsers();
+  if (data.violations?.length) renderViolations();
+}
+
+/* ============================================================
+   НАВИГАЦИЯ
+   ============================================================ */
+function switchTab(tabId) {
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  const btn = document.querySelector(`nav button[data-tab="${tabId}"]`);
+  if (btn) btn.classList.add('active');
+  const sec = document.getElementById(tabId);
+  if (sec) sec.classList.add('active');
+
+  if (tabId === 'command3') renderViolations();
+  if (tabId === 'command7') renderClients();
+  if (tabId === 'profile')  fillProfile();
+}
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+/* ============================================================
+   ПРОФИЛЬ / СМЕНА ПАРОЛЯ
+   ============================================================ */
+function fillProfile() {
+  if (!currentUser) return;
+  document.getElementById('profileName').value = currentUser.name;
+  document.getElementById('profileRole').value =
+    currentUser.role === 'super' ? 'Супер-администратор' : 'Пользователь';
+  document.getElementById('profileResult').style.display = 'none';
+  document.getElementById('oldPass').value = '';
+  document.getElementById('newPass').value = '';
+  document.getElementById('newPass2').value = '';
+}
+function changePassword() {
+  const res = document.getElementById('profileResult');
+  res.style.display = 'block';
+  res.className = 'result';
+
+  const oldPass  = document.getElementById('oldPass').value;
+  const newPass  = document.getElementById('newPass').value;
+  const newPass2 = document.getElementById('newPass2').value;
+
+  if (!oldPass || !newPass || !newPass2) {
+    res.classList.add('error');
+    res.textContent = 'Заполните все поля.';
+    return;
+  }
+  if (oldPass !== currentUser.password) {
+    res.classList.add('error');
+    res.textContent = 'Текущий пароль указан неверно.';
+    return;
+  }
+  if (newPass.length < 4) {
+    res.classList.add('error');
+    res.textContent = 'Новый пароль должен быть не короче 4 символов.';
+    return;
+  }
+  if (newPass !== newPass2) {
+    res.classList.add('error');
+    res.textContent = 'Новые пароли не совпадают.';
+    return;
+  }
+
+  currentUser.password = newPass;
+  saveState();
+  res.classList.add('ok');
+  res.textContent = '✅ Пароль успешно изменён.';
+  document.getElementById('oldPass').value = '';
+  document.getElementById('newPass').value = '';
+  document.getElementById('newPass2').value = '';
+}
+
+/* ============================================================
+   EXCEL
+   ============================================================ */
+function readWorkbook(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => {
+      try { resolve(XLSX.read(e.target.result, { type: 'array' })); }
+      catch (err) { reject(err); }
+    };
+    r.onerror = reject;
+    r.readAsArrayBuffer(file);
+  });
+}
+function workbookToRows(wb) {
+  const rows = [];
+  wb.SheetNames.forEach(n => {
+    XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: '' }).forEach(r => rows.push(r));
+  });
+  return rows;
+}
+
+/* Универсальный парсер «Нарушений ТУ» */
+function parseViolations(rows) {
+  return rows.map(raw => {
+    const norm = {};
+    Object.keys(raw).forEach(k => {
+      const key = String(k).toLowerCase()
+        .replace(/\s+/g, ' ')
+        .replace(/ё/g, 'е')
+        .trim();
+      norm[key] = raw[k];
+    });
+    const pick = (...names) => {
+      for (const n of names) {
+        const key = n.toLowerCase().replace(/ё/g, 'е');
+        if (norm[key] !== undefined && norm[key] !== '') return norm[key];
+      }
+      return '';
+    };
+    return {
+      client:    pick('клиент', 'клиент/организация', 'организация'),
+      status:    pick('статус', 'состояние'),
+      violation: pick('вид нарушения', 'нарушение', 'тип нарушения'),
+      rack:      pick('стойка', 'номер стойки', 'стойка/юнит'),
+      comment:   pick('комментарии', 'комментарий', 'примечание', 'примечания'),
+      _raw: raw
+    };
+  });
+}
+
+function loadFiles() {
+  const c = document.getElementById('cableFile');
+  const v = document.getElementById('violationFile');
+  const out = document.getElementById('uploadResult');
+  out.style.display = 'block';
+  out.className = 'result';
+  out.textContent = '';
+
+  let pending = 0;
+  const done = () => {
+    pending--;
+    if (pending === 0) {
+      out.textContent =
+        '✅ Обработано.\n' +
+        'Кабельный журнал: ' + data.cable.length + ' строк\n' +
+        'Нарушения ТУ: ' + data.violations.length + ' строк';
+    }
+  };
+
+  if (c.files[0]) {
+    pending++;
+    readWorkbook(c.files[0]).then(wb => {
+      data.cable = workbookToRows(wb);
+      done();
+    }).catch(e => { out.className = 'result error'; out.textContent = 'Ошибка чтения журнала: ' + e; });
+  }
+  if (v.files[0]) {
+    pending++;
+    readWorkbook(v.files[0]).then(wb => {
+      const sheetName =
+        wb.SheetNames.find(n => n.toLowerCase().includes('нарушен')) ||
+        wb.SheetNames[0];
+      const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+      data.violations = parseViolations(rawRows);
+      done();
+    }).catch(e => { out.className = 'result error'; out.textContent = 'Ошибка чтения нарушений: ' + e; });
+  }
+  if (pending === 0) {
+    out.className = 'result error';
+    out.textContent = 'Файлы не выбраны.';
+  }
+}
+
+/* ============================================================
+   ПОИСК
+   ============================================================ */
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  const res = document.getElementById('searchResult');
+  res.style.display = 'block';
+  res.className = 'result';
+
+  if (!data.cable.length) {
+    res.classList.add('error');
+    res.textContent = '⚠ Сначала загрузите «Кабельный журнал» на вкладке «📥 Excel».';
+    return;
+  }
+  if (!q) { res.textContent = 'Введите номер.'; return; }
+
+  const find = (col, val) => data.cable.find(r => String(r[col] ?? '').trim() === val);
+  let msg = '';
+  const rackRow  = find('Номер стойки', q);
+  const crosRow  = find('Номер кроссовой стойки', q);
+  const cableRow = find('ID № кабеля', q);
+
+  if (rackRow) {
+    msg += '✅\n';
+    if (rackRow['Клиент'])   msg += '🏛 Клиент: ' + rackRow['Клиент'] + '\n';
+    if (rackRow['Мощность']) msg += '🔌 Мощность: ' + rackRow['Мощность'] + '\n';
+    if (rackRow['Ток'])      msg += '⚡ Ток: ' + rackRow['Ток'] + '\n';
+    if (rackRow['Размер'])   msg += '📐 Размер: ' + rackRow['Размер'] + '\n';
+    if (rackRow['Статус'])   msg += '📃 Статус: ' + rackRow['Статус'] + '\n';
+  }
+  if (crosRow) {
+    msg += '\n✅\nКроссовая стойка:\n';
+    for (let i = 1; i <= 8; i++) {
+      const vv = crosRow['Клиент ' + i];
+      if (vv) msg += '🟡 ' + vv + '\n';
+    }
+  }
+  if (cableRow) {
+    msg += '\n✅ \nСЛ: ' + (cableRow['ID № кабеля'] || '') + '\n';
+    if (cableRow['Тип кабеля']) msg += 'Тип кабеля СЛ: ' + cableRow['Тип кабеля'] + '\n';
+    if (cableRow['№ договора 1я точка ЗАКАЗЧИК']) msg += '🏛 Заказчик: ' + cableRow['№ договора 1я точка ЗАКАЗЧИК'] + '\n';
+    if (cableRow['1я точка подключения к стойке/  юниту'] && cableRow['Тип разъема точка №1'])
+      msg += '🔴 Точка А: ' + cableRow['1я точка подключения к стойке/  юниту'] + '. Разъем: ' + cableRow['Тип разъема точка №1'] + '\n';
+    if (cableRow['2я точка подключения к стойке/  юниту'] && cableRow['Тип разъема точка №2'])
+      msg += '🔵 Точка B: ' + cableRow['2я точка подключения к стойке/  юниту'] + '. Разъем: ' + cableRow['Тип разъема точка №2'] + '\n';
+    if (cableRow['Дата завершения инсталляции']) msg += '🕗 Дата: ' + cableRow['Дата завершения инсталляции'] + '\n';
+    if (cableRow['Длина кабеля'])   msg += '📐 Длина: ' + cableRow['Длина кабеля'] + ' м\n';
+    if (cableRow['ЗАЯВКА           (почта)']) msg += '✉ Основание: ' + cableRow['ЗАЯВКА           (почта)'] + '\n';
+    if (cableRow['Комментарий'])    msg += 'Комментарии: ' + cableRow['Комментарий'] + '\n';
+    if (cableRow['Примечание'])     msg += 'Примечания: ' + cableRow['Примечание'] + '\n';
+    if (cableRow['Организация/клиент']) msg += '\nОрганизация/клиент: ' + cableRow['Организация/клиент'] + '\n';
+  }
+
+  if (!msg) {
+    res.classList.add('error');
+    res.textContent = '❌\nНе найдено: ' + q;
+  } else res.textContent = msg;
+}
+
+/* ============================================================
+   КЛИЕНТЫ (ищем только в столбце «Клиент»)
+   ============================================================ */
+function renderClients() {
+  const box = document.getElementById('clientsList');
+  if (!data.cable.length) {
+    box.innerHTML = '<div class="result error">⚠ Загрузите «Кабельный журнал» на вкладке «📥 Excel».</div>';
+    return;
+  }
+
+  // Собираем клиентов ТОЛЬКО из столбца "Клиент"
+  const set = new Set();
+  data.cable.forEach(r => {
+    const name = r['Клиент'];
+    if (isRealClient(name)) set.add(String(name).trim());
+  });
+
+  const clients = [...set].sort((a, b) => a.localeCompare(b, 'ru'));
+
+  if (!clients.length) {
+    box.innerHTML = '<div class="result">Нет данных о клиентах.</div>';
+    return;
+  }
+  box.innerHTML =
+    '<p style="margin-bottom:8px; font-size:.88rem;">Выберите клиента:</p>' +
+    clients.map(c =>
+      `<button class="client-btn" onclick="showClientRacks('${escapeAttr(c)}')">${escapeHtml(c)}</button>`
+    ).join('') +
+    '<div id="clientRacksDetail" class="result" style="display:none"></div>';
+}
+
+/**
+ * Показываем стойки клиента.
+ * Ищем совпадения ТОЛЬКО по столбцу "Клиент" → берём "Номер стойки".
+ * Кроссовые столбцы (Клиент 1..8 / Номер кроссовой стойки) НЕ используем.
+ */
+function showClientRacks(client) {
+  const target = String(client).trim().toLowerCase();
+  const racks = new Set();
+
+  data.cable.forEach(r => {
+    const main = String(r['Клиент'] ?? '').trim().toLowerCase();
+    if (main === target) {
+      const rn = r['Номер стойки'];
+      if (rn !== undefined && rn !== '') racks.add(String(rn).trim());
+    }
+  });
+
+  const box = document.getElementById('clientRacksDetail');
+  box.style.display = 'block';
+  const list = [...racks].sort((a, b) => a.localeCompare(b, 'ru', { numeric: true }));
+
+  let msg = `Клиент: ${client}\nКоличество стоек: ${list.length}\n`;
+  if (list.length) msg += '\nНомера стоек:' + list.map(r => '\n- ' + r).join('');
+  else msg += '\nНет данных о стойках.';
+  box.textContent = msg;
+}
+
+/* ============================================================
+   НАРУШЕНИЯ ТУ
+   ============================================================ */
+function renderViolations() {
+  const box = document.getElementById('violationsList');
+  if (!data.violations.length) {
+    box.innerHTML = '<div class="result error">⚠ Загрузите файл «Уведомления и нарушение ТУ» на вкладке «📥 Excel».</div>';
+    return;
+  }
+
+  const notResolved = data.violations.filter(r =>
+    String(r.status || '').trim().toLowerCase() === 'не устранено'
+  );
+
+  if (!notResolved.length) {
+    box.innerHTML = '<div class="result">Нет записей со статусом «Не устранено».</div>';
+    return;
+  }
+
+  const clients = [...new Set(
+    notResolved.map(r => String(r.client || '').trim()).filter(Boolean)
+  )].sort((a, b) => a.localeCompare(b, 'ru'));
+
+  box.innerHTML =
+    '<p style="margin-bottom:8px; font-size:.88rem;">Выберите клиента:</p>' +
+    clients.map(c =>
+      `<button class="client-btn" onclick="showViolation('${escapeAttr(c)}')">${escapeHtml(c)}</button>`
+    ).join('') +
+    '<div id="violationDetail" class="result" style="display:none"></div>';
+}
+
+function showViolation(client) {
+  const target = String(client).trim().toLowerCase();
+  const rows = data.violations.filter(r =>
+    String(r.client || '').trim().toLowerCase() === target &&
+    String(r.status || '').trim().toLowerCase() === 'не устранено'
+  );
+  const box = document.getElementById('violationDetail');
+  box.style.display = 'block';
+
+  let msg = 'Клиент: ' + client + '\n\nНарушения:';
+  rows.forEach(r => {
+    const comment = r.comment || 'Нет комментариев';
+    const rack = r.rack || '—';
+    const viol = r.violation || '—';
+    msg += `\n🚨 Стойка ${rack} — ${viol}\n\tКомментарий: ${comment}\n`;
+  });
+  box.textContent = msg;
+}
+
+/* ============================================================
+   ЯЧЕЙКИ / СКЛАДЫ
+   ============================================================ */
+function renderCells() {
+  document.getElementById('cellsText').textContent = '🔑\n' + state.cells.join('\n');
+  const list = document.getElementById('cellsEditList');
+  list.innerHTML = '';
+  state.cells.forEach((c, i) => list.appendChild(makeEditRow(c, i, 'cells')));
+}
+function renderStorages() {
+  document.getElementById('storagesText').textContent = '🏢\n' + state.storages.join('\n');
+  const list = document.getElementById('storagesEditList');
+  list.innerHTML = '';
+  state.storages.forEach((c, i) => list.appendChild(makeEditRow(c, i, 'storages')));
+}
+function makeEditRow(value, idx, kind) {
+  const row = document.createElement('div');
+  row.className = 'edit-row';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = value;
+  const del = document.createElement('button');
+  del.className = 'del';
+  del.textContent = '×';
+  del.onclick = () => {
+    const arr = kind === 'cells' ? state.cells : state.storages;
+    arr.splice(idx, 1);
+    kind === 'cells' ? renderCells() : renderStorages();
+  };
+  row.append(inp, del);
+  return row;
+}
+function addCellRow() { state.cells.push(''); renderCells(); focusLast('#cellsEditList input'); }
+function addStorageRow() { state.storages.push(''); renderStorages(); focusLast('#storagesEditList input'); }
+function focusLast(sel) {
+  const arr = document.querySelectorAll(sel);
+  if (arr.length) arr[arr.length - 1].focus();
+}
+function saveCells() {
+  const inputs = document.querySelectorAll('#cellsEditList input');
+  state.cells = [...inputs].map(i => i.value.trim()).filter(Boolean);
+  saveState();
+  renderCells();
+  toggleEdit('cells', false);
+}
+function saveStorages() {
+  const inputs = document.querySelectorAll('#storagesEditList input');
+  state.storages = [...inputs].map(i => i.value.trim()).filter(Boolean);
+  saveState();
+  renderStorages();
+  toggleEdit('storages', false);
+}
+function toggleEdit(kind, on) {
+  const view = document.getElementById(kind + 'View');
+  const edit = document.getElementById(kind + 'Edit');
+  const btns = document.getElementById(kind + 'AdminBtns');
+  view.style.display = on ? 'none' : '';
+  edit.style.display = on ? '' : 'none';
+  btns.style.display = (on || currentUser?.role !== 'super') ? 'none' : '';
+  kind === 'cells' ? renderCells() : renderStorages();
+}
+
+/* ============================================================
+   ПОЛЬЗОВАТЕЛИ
+   ============================================================ */
+function renderUsers() {
+  const tbody = document.getElementById('usersTbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  state.users.forEach(u => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.textContent = u.name;
+
+    const tdRole = document.createElement('td');
+    const span = document.createElement('span');
+    span.className = 'role-badge ' + (u.role === 'super' ? 'role-super' : 'role-user');
+    span.textContent = u.role === 'super' ? 'Супер-админ' : 'Пользователь';
+    tdRole.appendChild(span);
+
+    const tdToggle = document.createElement('td');
+    if (u.id !== currentUser.id) {
+      const b = document.createElement('button');
+      b.className = 'del-user';
+      b.style.borderColor = '#0ea5e9';
+      b.style.color = '#0ea5e9';
+      b.textContent = u.role === 'super' ? 'Снять супер' : 'Сделать супер';
+      b.onclick = () => toggleRole(u.id);
+      tdToggle.appendChild(b);
+    }
+
+    const tdAct = document.createElement('td');
+    const btnDel = document.createElement('button');
+    btnDel.className = 'del-user';
+    btnDel.textContent = 'Удалить';
+    btnDel.disabled = (u.role === 'super' && countSupers() <= 1) || u.id === currentUser.id;
+    btnDel.onclick = () => removeUser(u.id);
+    tdAct.appendChild(btnDel);
+
+    tr.append(tdName, tdRole, tdToggle, tdAct);
+    tbody.appendChild(tr);
+  });
+}
+function countSupers() { return state.users.filter(u => u.role === 'super').length; }
+function addUser() {
+  const name = document.getElementById('newUserName').value.trim();
+  const pass = document.getElementById('newUserPass').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  const res = document.getElementById('usersResult');
+  res.style.display = 'block';
+  res.className = 'result';
+
+  if (!name || !pass) {
+    res.classList.add('error');
+    res.textContent = 'Заполните имя и пароль.';
+    return;
+  }
+  if (state.users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+    res.classList.add('error');
+    res.textContent = 'Пользователь с таким именем уже существует.';
+    return;
+  }
+  const nextId = Math.max(0, ...state.users.map(u => u.id)) + 1;
+  state.users.push({ id: nextId, name, password: pass, role });
+  saveState();
+  renderUsers();
+  fillLoginSelect();
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPass').value = '';
+  document.getElementById('newUserRole').value = 'user';
+  res.classList.add('ok');
+  res.textContent = '✅ Пользователь «' + name + '» добавлен.';
+}
+function removeUser(id) {
+  const u = state.users.find(x => x.id === id);
+  if (!u) return;
+  if (u.role === 'super' && countSupers() <= 1) {
+    alert('Нельзя удалить последнего супер-администратора.');
+    return;
+  }
+  if (!confirm('Удалить пользователя «' + u.name + '»?')) return;
+  state.users = state.users.filter(x => x.id !== id);
+  saveState();
+  renderUsers();
+  fillLoginSelect();
+}
+function toggleRole(id) {
+  const u = state.users.find(x => x.id === id);
+  if (!u) return;
+  if (u.role === 'super' && countSupers() <= 1) {
+    alert('Нельзя снять роль с последнего супер-администратора.');
+    return;
+  }
+  u.role = u.role === 'super' ? 'user' : 'super';
+  saveState();
+  renderUsers();
+  fillLoginSelect();
+}
+
+/* ============================================================
+   ВСПОМОГАТЕЛЬНЫЕ
+   ============================================================ */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/'/g, "\\'"); }
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+(function init() {
+  fillLoginSelect();
+  const savedId = sessionStorage.getItem('dc_logged');
+  if (savedId) {
+    const u = state.users.find(x => x.id === parseInt(savedId, 10));
+    if (u) { currentUser = u; showApp(); }
+  }
+  document.getElementById('loginPass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+})();
+</script>
+</body>
+</html>
